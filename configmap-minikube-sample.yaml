@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: minikube-sample
+  namespace: default
+data:
+  app.data.name: "Minikube Sample Application"
+  app.data.test: "Configuration from ConfigMap - Updated!"
+  application.yml: |
+    app:
+      data:
+        name: ${app.data.name:DefaultAppName}
+        test: ${app.data.test:DefaultTestValue}
+    
+    management:
+      endpoints:
+        web:
+          exposure:
+            include: health,info
+          base-path: /actuator
+      endpoint:
+        health:
+          show-details: when_authorized
+    
+    logging:
+      level:
+        com.minikube.sample: DEBUG
+        org.springframework.cloud.kubernetes: DEBUG

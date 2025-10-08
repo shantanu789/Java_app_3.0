@@ -1,33 +1,78 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: myjavaapp-deployment
+  name: minikube-sample-deployment
+  labels:
+    app: minikube-sample
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
-      app: myjavaapp
+      app: minikube-sample
   template:
     metadata:
       labels:
-        app: myjavaapp
+        app: minikube-sample
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
       containers:
-      - name: myjavaapp
-        image: 600735812827.dkr.ecr.us-west-1.amazonaws.com/javasession2:latest
+      - name: minikube-sample
+        image: {{ECR_REGISTRY}}/{{ECR_REPO_NAME}}:{{IMAGE_TAG}}
         ports:
         - containerPort: 8080
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "kubernetes"
+        envFrom:
+        - configMapRef:
+            name: minikube-sample
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: myjavaapp-service
+  name: minikube-sample-service
+  labels:
+    app: minikube-sample
 spec:
   selector:
-    app: myjavaapp
+    app: minikube-sample
   ports:
   - name: http
     port: 80
     targetPort: 8080
+    protocol: TCP
   type: LoadBalancer
+  sessionAffinity: None

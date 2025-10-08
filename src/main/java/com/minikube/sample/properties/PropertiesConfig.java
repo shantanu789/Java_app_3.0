@@ -13,6 +13,6 @@ import org.springframework.context.annotation.Configuration;
 @Setter
 public class PropertiesConfig {
 
-	private String test;
-	private String name;
+	private String test = "Default test value";
+	private String name = "Default app name";
 }
