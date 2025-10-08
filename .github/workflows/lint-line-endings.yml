@@ -1,0 +1,66 @@
+name: Line Endings Check
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  check-line-endings:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check for Windows line endings in shell scripts
+      run: |
+        set -e
+        echo "Checking for CRLF line endings in shell scripts..."
+        
+        # Check mvnw script specifically
+        if grep -l $'\r' mvnw 2>/dev/null; then
+          echo "❌ ERROR: mvnw script contains Windows line endings (CRLF)"
+          echo "Please convert to Unix line endings (LF) using:"
+          echo "  dos2unix mvnw"
+          echo "Or on Windows PowerShell:"
+          echo '  $content = [System.IO.File]::ReadAllText("mvnw"); [System.IO.File]::WriteAllText("mvnw", $content.Replace("`r`n", "`n"), [System.Text.Encoding]::UTF8)'
+          exit 1
+        fi
+        
+        # Check all shell scripts
+        if find . -name "*.sh" -exec grep -l $'\r' {} \; 2>/dev/null | grep -q .; then
+          echo "❌ ERROR: Shell scripts with Windows line endings found:"
+          find . -name "*.sh" -exec grep -l $'\r' {} \; 2>/dev/null || true
+          exit 1
+        fi
+        
+        echo "✅ All shell scripts have correct Unix line endings"
+        
+    - name: Verify Maven wrapper structure
+      run: |
+        echo "Verifying Maven wrapper files..."
+        
+        # Check required files exist
+        if [ ! -f mvnw ]; then
+          echo "❌ ERROR: mvnw script missing"
+          exit 1
+        fi
+        
+        if [ ! -f .mvn/wrapper/maven-wrapper.jar ]; then
+          echo "❌ ERROR: maven-wrapper.jar missing"
+          exit 1
+        fi
+        
+        if [ ! -f .mvn/wrapper/maven-wrapper.properties ]; then
+          echo "❌ ERROR: maven-wrapper.properties missing"
+          exit 1
+        fi
+        
+        # Check mvnw is executable
+        if [ ! -x mvnw ]; then
+          echo "❌ ERROR: mvnw script is not executable"
+          exit 1
+        fi
+        
+        echo "✅ Maven wrapper structure is correct"

@@ -1,20 +1,23 @@
 # Multi-stage build for security and efficiency
-FROM eclipse-temurin:11-jdk-alpine AS builder
+FROM eclipse-temurin:17-jdk-alpine AS builder
 WORKDIR /build
+RUN apk add --no-cache bash
 
 # Copy Maven files
 COPY pom.xml .
-COPY mvnw .
 COPY .mvn .mvn
+COPY mvnw .
+COPY mvnw.cmd .
+RUN chmod +x mvnw
 
 # Copy source code
 COPY src ./src
 
 # Build the application
-RUN ./mvnw clean package -DskipTests
+RUN bash ./mvnw clean package -DskipTests
 
 # Production stage with minimal JRE
-FROM eclipse-temurin:11-jre-alpine
+FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
 # Create non-root user
